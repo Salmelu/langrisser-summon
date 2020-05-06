@@ -1,0 +1,321 @@
+<html>
+<head>
+<style>
+
+body {
+  background: white;
+  color: #323232;
+  font-weight: 300;
+  height: 100vh;
+  margin: 0;
+  display: block;
+  align-items: center;
+  justify-content: center;
+  font-family: Helvetica neue, roboto;
+}
+
+
+img {
+  width: 56px;
+  height: 48px;
+}
+
+h1 {
+  font-weight: 200;
+  font-style: 26px;
+  margin: 10px;
+}
+
+
+.sr {
+  color: #970;
+}
+
+.ssr {
+  color: #900;
+  font-weight:bold;
+}
+
+.heroes td > img {
+  height: 145px;
+  width: 101px;
+}
+
+</style>
+</head>
+<body>
+
+<div>
+  <h1>Configure your banner</h1>
+  <p>Current banner: <span id="banner">None</span></p>
+  <p>Hero 1: <select id="hero_1"></select></p>
+  <p>Hero 2: <select id="hero_2"></select></p>
+  <p>Hero 3: <select id="hero_3"></select></p>
+  <p>Focus banner <input type="checkbox" name="focus" id="focus"/> </p>
+  <p><button id="set_banner" name="set_banner" onclick="set_banner()"/>Set banner</button></p>
+</div>
+
+<div>
+  <h1>Summoning</h1>
+  <p>Pity rate: <span id="pity">0</span>/100</p>
+  <p>
+    <button id="set_banner" name="set_banner" onclick="do_summon(1)"/>Summon 1</button>
+    <button id="set_banner" name="set_banner" onclick="do_summon(10)"/>Summon 10</button>
+  </p>
+  <table class="heroes">
+    <tr>
+      <td id="summon1"></td>
+      <td id="summon2"></td>
+      <td id="summon3"></td>
+      <td id="summon4"></td>
+      <td id="summon5"></td>
+    </tr>
+    <tr>
+      <td id="summon6"></td>
+      <td id="summon7"></td>
+      <td id="summon8"></td>
+      <td id="summon9"></td>
+      <td id="summon10"></td>
+    </tr>
+  </table>
+</div>
+
+<script>
+HEROES_R = ['Aaron', 'Anna', 'Dios', 'Jessica', 'Keith', 'Laird', 'Lester', 'Leticia', 'Lewin', 'Pierre', 'Rohga', 'Scott'];
+HEROES_SR = ['Alfred', 'Chris', 'Egbert', 'Emerick', 'Feraquea', 'Freya', 'Hein', 'Imelda', 'Kirikaze', 'Lance', 'Liffany', 'Narm', 'Serena', 'Silver Wolf', 'Sonya', 'Sophia', 'Vargas', 'Varna'];
+HEROES_SSR = ['Aka', 'Altemuller', 'Alustriel', 'Angelina', 'Bernhardt', 'Betty', 'Bozel', 'Brenda', 'Cherie', 'Clarett', 'Dieharte', 'Elwin', 'Emilia', 'Gerold and Layla', 'Gizarof', 'Young Jessica', 'Jugler', 'Knight of Mystery', 'Lambda', 'Lana', 'Landius', 'Lanford', 'Ledin', 'Leon', 'Liana', 'Listell', 'Luna', 'Omega', 'Rachel', 'Rainforce', 'Shelfaniel', 'Sigma', 'Tiaris', 'Virash', 'Wiler', 'Yulia', 'Zerida'];
+COLLAB_HEROES = ['Deedlit', 'Ashram'];
+
+PITY_RATE = 100
+SSR_RATE = 0.02
+SR_RATE = 0.15
+
+var current_pity = 0
+
+var banner = null;
+
+hero_select_1 = document.getElementById('hero_1')
+hero_select_2 = document.getElementById('hero_2')
+hero_select_3 = document.getElementById('hero_3')
+
+function add_option(hero) {
+   var opt = document.createElement("option");
+   opt.value= hero;
+   opt.innerHTML = hero; // whatever property it has
+
+   // then append it to the select element
+   hero_select_1.appendChild(opt);
+   var opt = document.createElement("option");
+   opt.value= hero;
+   opt.innerHTML = hero; // whatever property it has
+
+   // then append it to the select element
+   hero_select_2.appendChild(opt);
+   var opt = document.createElement("option");
+   opt.value= hero;
+   opt.innerHTML = hero; // whatever property it has
+
+   // then append it to the select element
+   hero_select_3.appendChild(opt);
+}
+
+add_option("None");
+for(var i = 0; i < HEROES_SSR.length; ++i)
+{
+  add_option(HEROES_SSR[i]);
+}
+for(var i = 0; i < COLLAB_HEROES.length; ++i)
+{
+  add_option(COLLAB_HEROES[i]);
+}
+
+class Banner {
+
+  got_ssr = false;
+  heroes = [];
+
+  constructor(focus, heroes) {
+    this.focus = focus
+    this.heroes = heroes;
+  }
+
+  has_got_ssr() {
+    return this.got_ssr;
+  }
+
+  mark_pull() {
+    this.got_ssr = true;
+  }
+
+  is_focus() {
+    return this.focus;
+  }
+
+  get_heroes() {
+    return this.heroes;
+  }
+
+  get_chance() {
+    return 0.8;
+  }
+}
+
+function pull(banner) {
+  r = Math.random();
+  hero = null
+  if (r < SSR_RATE || current_pity == PITY_RATE - 1) {
+    // pulled an SSR
+    current_pity = 0;
+    if (banner == null) {
+      hero = HEROES_SSR[Math.floor(Math.random() * HEROES_SSR.length)];
+    }
+    else if (banner.is_focus() && !banner.has_got_ssr()) {
+      choices = banner.get_heroes();
+      banner.mark_pull();
+      hero = choices[Math.floor(Math.random() * choices.length)];
+    }
+    else {
+      r2 = Math.random();
+      banner.mark_pull();
+      if (r2 < banner.get_chance()) {
+        choices = banner.get_heroes();
+        hero = choices[Math.floor(Math.random() * choices.length)];
+      }
+      else {
+        copy = HEROES_SSR.filter(function(value, index, arr){ return !banner.get_heroes().includes(value);})
+        hero = copy[Math.floor(Math.random() * copy.length)];
+      }
+    }
+  }
+  else if (r < SSR_RATE + SR_RATE) {
+    current_pity++;
+    hero = HEROES_SR[Math.floor(Math.random() * HEROES_SR.length)];
+  }
+  else {
+    current_pity++;
+    hero = HEROES_R[Math.floor(Math.random() * HEROES_R.length)];
+  }
+  return hero;
+}
+
+function ten_pull(banner) {
+  heroes = [];
+  pulled_sr = false;
+  for (var i = 0; i < 10; ++i) {
+    r = Math.random();
+    if (r < SSR_RATE || current_pity == PITY_RATE - 1) {
+      // pulled an SSR
+      current_pity = 0;
+      pulled_sr = true;
+      if (banner == null) {
+        heroes.push(HEROES_SSR[Math.floor(Math.random() * HEROES_SSR.length)]);
+      }
+      else if (banner.is_focus() && !banner.has_got_ssr()) {
+        choices = banner.get_heroes();
+        banner.mark_pull();
+        heroes.push(choices[Math.floor(Math.random() * choices.length)]);
+      }
+      else {
+        r2 = Math.random();
+        banner.mark_pull();
+        if (r2 < banner.get_chance()) {
+          choices = banner.get_heroes();
+          heroes.push(choices[Math.floor(Math.random() * choices.length)]);
+        }
+        else {
+          copy = HEROES_SSR.filter(function(value, index, arr){ return !banner.get_heroes().includes(value);})
+          heroes.push(copy[Math.floor(Math.random() * copy.length)]);
+        }
+      }
+    }
+    else if ((r < SSR_RATE + SR_RATE) || (!pulled_sr && i == 9)) {
+      current_pity++;
+      pulled_sr = true;
+      heroes.push(HEROES_SR[Math.floor(Math.random() * HEROES_SR.length)]);
+    }
+    else {
+      current_pity++;
+      heroes.push(HEROES_R[Math.floor(Math.random() * HEROES_R.length)]);
+    }
+  }
+  return heroes;
+}
+
+function set_banner() {
+  focus = document.getElementById('focus').checked;
+  hero_1 = document.getElementById('hero_1').value;
+  hero_2 = document.getElementById('hero_2').value;
+  hero_3 = document.getElementById('hero_3').value;
+
+  heroes = [];
+  if (hero_1 != 'None') {
+    heroes.push(hero_1);
+  }
+  if (hero_2 != 'None') {
+    heroes.push(hero_2);
+  }
+  if (hero_3 != 'None') {
+    heroes.push(hero_3);
+  }
+
+  if (heroes.length > 0) {
+    banner = new Banner(focus, heroes);
+  }
+  else {
+    banner = null;
+  }
+
+  document.getElementById("banner").innerHTML = 
+    banner == null ? 
+    "None" :
+    banner.get_heroes().join(', ') + (banner.is_focus() ? ' (focus)' : '');
+}
+
+function display_hero(box, hero) {
+  img_name = hero.toLowerCase().replace(" ", "_");
+
+  element = document.getElementById(box);
+  element.innerHTML = "";
+
+  if (hero != "") {
+    var i = document.createElement("img");
+    i.src = "heroes/" + img_name + ".png";
+    i.alt = hero;
+    element.appendChild(i);
+  }
+  else {
+    element.innerHTML = hero;
+  }
+}
+
+function do_summon(amount) {
+  var heroes = [];
+  if (amount == 1) {
+    heroes = [pull(banner)];
+  }
+  else if (amount == 10) {
+    heroes = ten_pull(banner);
+  }
+  else {
+    console.log("Cannot pull this amount");
+  }
+
+  for (var i = 1; i <= heroes.length; ++i) {
+    element_id = "summon" + i;
+    hero_name = heroes[i-1];
+    display_hero(element_id, hero_name);
+  }
+  for (var i = heroes.length + 1; i <= 10; ++i) {
+    element_id = "summon" + i;
+    display_hero(element_id, "");
+  }
+
+  document.getElementById("pity").innerHTML = current_pity;
+}
+
+
+</script>
+</body>
+</html>
+
+
